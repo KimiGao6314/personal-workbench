@@ -83,7 +83,7 @@ function patchOf(key: string, value: QFVal): Record<string, QFVal> {
 
 /* ---------------- 内嵌月历 ---------------- */
 
-const CAL_WEEK = ['一', '二', '三', '四', '五', '六', '日']
+const CAL_WEEK = ['日', '一', '二', '三', '四', '五', '六']
 
 function CalPicker({
   selected,
@@ -102,7 +102,7 @@ function CalPicker({
   const m = view.getMonth()
   const todayIso = isoOf(new Date())
   const first = new Date(y, m, 1)
-  const pad = (first.getDay() + 6) % 7 // 周一开头
+  const pad = first.getDay() // 周日开头
   const daysInMonth = new Date(y, m + 1, 0).getDate()
 
   const go = (dm: number): void => {

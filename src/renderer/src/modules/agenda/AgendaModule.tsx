@@ -25,6 +25,7 @@ import {
   type AgendaState
 } from './model'
 import RepeatPicker from './RepeatPicker'
+import type { CalendarEvent } from '@shared/api'
 
 const WEEKS = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -101,6 +102,9 @@ export default function AgendaModule(): React.JSX.Element {
   const qfWrapRef = useRef<HTMLDivElement>(null)
   const quickRef = useRef<HTMLInputElement>(null)
 
+  // macOS 本地日历事件（节假日/系统日历），按月拉取
+  const [sysEvents, setSysEvents] = useState<Record<string, CalendarEvent[]>>({})
+
   const seeded = useRef(false)
 
   useEffect(() => {
@@ -108,6 +112,26 @@ export default function AgendaModule(): React.JSX.Element {
     seeded.current = true
     save(EMPTY_AGENDA)
   }, [ready, error, data, save])
+
+  useEffect(() => {
+    let live = true
+    const from = iso(new Date(month.getFullYear(), month.getMonth(), 1))
+    const to = iso(new Date(month.getFullYear(), month.getMonth() + 1, 0))
+    void window.workbench?.calendar
+      .events(from, to)
+      .then((evs) => {
+        if (!live) return
+        const map: Record<string, CalendarEvent[]> = {}
+        for (const e of evs) {
+          ;(map[e.date] ??= []).push(e)
+        }
+        setSysEvents(map)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [month])
 
   const openQf = (key: string | null): void => {
     setQfActive(key)
@@ -204,7 +228,11 @@ export default function AgendaModule(): React.JSX.Element {
   const evsOn = (dateStr: string): AgendaItem[] =>
     itemsOnDate(state.items, dateStr).sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
 
+  /** 某天的 macOS 本地日历事件（节假日等） */
+  const sysOn = (dateStr: string): CalendarEvent[] => sysEvents[dateStr] ?? []
+
   const dayEvents = evsOn(selected)
+  const sysDay = sysOn(selected)
 
   const saveItem = (draft: Omit<AgendaItem, 'id' | 'createdAt'>, existing: AgendaItem | null): void => {
     save((prev) => {
@@ -334,6 +362,7 @@ export default function AgendaModule(): React.JSX.Element {
             const isSel = key === selected
             const isToday = key === todayISO()
             const evs = evsOn(key)
+            const sys = sysOn(key)
             return (
               <button
                 key={key}
@@ -345,6 +374,9 @@ export default function AgendaModule(): React.JSX.Element {
                   {evs.slice(0, 3).map((e) => (
                     <i key={e.id} style={{ background: e.location ? '#a78bfa' : '#7c96ff' }} />
                   ))}
+                  {sys.slice(0, 2).map((_s, si) => (
+                    <i key={`sys-${si}`} style={{ background: '#46d69b' }} />
+                  ))}
                 </span>
               </button>
             )
@@ -354,12 +386,25 @@ export default function AgendaModule(): React.JSX.Element {
 
       {/* 当日日程 */}
       <div className="agenda-day-head">
-        <span className="section-title">{fmtDateCN(selected)}{selected === todayISO() ? ' · 今天' : ''}（{dayEvents.length}）</span>
+        <span className="section-title">
+          {fmtDateCN(selected)}{selected === todayISO() ? ' · 今天' : ''}（{dayEvents.length + sysDay.length}）
+        </span>
       </div>
-      {dayEvents.length === 0 ? (
+      {dayEvents.length === 0 && sysDay.length === 0 ? (
         <div className="empty-note">这一天还没有日程，点「＋ 添加日程」或右上按钮。</div>
       ) : (
         <div className="k-list">
+          {sysDay.map((s, si) => (
+            <div key={`sys-${si}`} className="k-row sys-row">
+              <span className="agenda-time">{s.allDay ? '全天' : s.time}</span>
+              <div className="k-main">
+                <div className="k-title-line">
+                  <span className="k-title">{s.title}</span>
+                  <span className="tag tag-sys">📅 系统日历</span>
+                </div>
+              </div>
+            </div>
+          ))}
           {dayEvents.map((ev) => (
             <div key={ev.id} className="k-row" onClick={() => setEdit(ev)}>
               <span className="agenda-time">

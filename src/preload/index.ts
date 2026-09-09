@@ -40,6 +40,9 @@ const bridge: WorkbenchBridge = {
   },
   notify: {
     show: (title, body) => ipcRenderer.invoke('notify:show', { title, body })
+  },
+  calendar: {
+    events: (from, to) => ipcRenderer.invoke('calendar:events', { from, to })
   }
 }
 

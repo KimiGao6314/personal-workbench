@@ -11,8 +11,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP_NAME="我的工作台"
-OLD="0.8.0"
-NEW="0.9.0"
+OLD="1.0.0"
+NEW="1.1.0"
 
 echo "==> 1/4 构建最新前端产物 (out/)"
 pnpm build > /dev/null
@@ -68,6 +68,7 @@ cp -f "\$ME_DIR/package.json" "\$DEST/Contents/Resources/app/package.json"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString \${NEW_VER}" "\$DEST/Contents/Info.plist" 2>/dev/null \
   || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string \${NEW_VER}" "\$DEST/Contents/Info.plist" 2>/dev/null \
   || true
+/usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string 用于在日程中读取 macOS 本地日历（如中国节假日）并显示。" "\$DEST/Contents/Info.plist" 2>/dev/null || true
 
 echo "→ 重新 ad-hoc 签名（避免“已损坏/无法打开”）…"
 codesign --force --deep -s - "\$DEST" 2>/dev/null || codesign --force -s - "\$DEST" 2>/dev/null || true

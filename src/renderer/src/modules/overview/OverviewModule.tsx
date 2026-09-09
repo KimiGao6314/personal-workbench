@@ -1,5 +1,6 @@
 /**
- * 概览页：问候 + 可自定义的卡片区（课表/待办/外借/项目/日程/统计）。
+ * 概览页：问候 + 可自定义的卡片区（课表/待办/外借/设备台账/项目/启动器/日程）。
+ * 支持：显示/隐藏、可视化拖拽排序、卡片大小缩放。
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import { useShell } from '../../core/shell'
@@ -9,10 +10,17 @@ import { TODO_NS, countTodo, type TodoState } from '../todo/model'
 import MiniTimetable from '../timetable/MiniTimetable'
 import TodoMini from '../todo/TodoMini'
 import MiniGear from '../gear/MiniGear'
+import MiniGearFull from '../gear/MiniGearFull'
 import MiniProjects from '../assignments/MiniProjects'
+import MiniLauncher from '../launcher/MiniLauncher'
 import MiniAgenda from '../agenda/MiniAgenda'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
+
+/** 各档位：网格单列最小宽度（让列数真正不同，宽度才随档位变化） */
+const SCALE_COL: Record<'sm' | 'md' | 'lg', number> = { sm: 280, md: 340, lg: 460 }
+/** 各档位：网格行高（≈课程表卡片高度；固定行高，卡片内部滚动，待办不随数量长高） */
+const SCALE_ROW: Record<'sm' | 'md' | 'lg', number> = { sm: 212, md: 264, lg: 276 }
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -46,23 +54,27 @@ export default function OverviewModule(): React.JSX.Element {
   const uiStore = useStore<UiSettings>(UI_NS)
   const todo = countTodo(todoStore.data)
   const [customOpen, setCustomOpen] = useState(false)
+  const scale = uiStore.data?.overviewCardScale ?? 'md'
 
   const CARDS: CardDef[] = [
-    { key: 'timetable', title: '本周课表', linkId: 'timetable', body: <MiniTimetable /> },
+    { key: 'timetable', title: '本周课表', linkId: 'timetable', body: <MiniTimetable scale={scale} /> },
     { key: 'todo', title: '待办事项', linkId: 'todo', body: <TodoMini /> },
-    { key: 'lent', title: '正处于外借的器材', linkId: 'gear', body: <MiniGear /> },
+    { key: 'agenda', title: '日程（接下来）', linkId: 'agenda', body: <MiniAgenda /> },
     { key: 'projects', title: '正在进行的项目', linkId: 'assignments', body: <MiniProjects /> },
-    { key: 'agenda', title: '日程（接下来）', linkId: 'agenda', body: <MiniAgenda /> }
+    { key: 'lent', title: '正处于外借的器材', linkId: 'gear', body: <MiniGear /> },
+    { key: 'gear', title: '设备台账', linkId: 'gear', body: <MiniGearFull /> },
+    { key: 'launcher', title: '快捷启动器', linkId: 'launcher', body: <MiniLauncher /> }
   ]
 
   const savedOrder = uiStore.data?.overviewCards
   const order = savedOrder && savedOrder.length ? savedOrder : CARDS.map((c) => c.key)
   const shown = order.map((k) => CARDS.find((c) => c.key === k)).filter((c): c is CardDef => !!c)
 
-  const saveOrder = (keys: string[]): void => {
+  const saveOrder = (keys: string[], nextScale: 'sm' | 'md' | 'lg'): void => {
     uiStore.save({
       background: uiStore.data?.background ?? DEFAULT_UI.background,
-      overviewCards: keys
+      overviewCards: keys,
+      overviewCardScale: nextScale
     })
   }
 
@@ -99,7 +111,13 @@ export default function OverviewModule(): React.JSX.Element {
           概览卡片都隐藏了。点右上「🎛 自定义卡片」把它们加回来。
         </div>
       ) : (
-        <section className="overview-blocks">
+        <section
+          className="overview-blocks"
+          style={{
+            gridTemplateColumns: `repeat(auto-fit, minmax(${SCALE_COL[scale]}px, 1fr))`,
+            gridAutoRows: `${SCALE_ROW[scale]}px`
+          }}
+        >
           {shown.map((card) => (
             <div key={card.key} className="ov-block">
               <div className="duo-head">
@@ -117,9 +135,10 @@ export default function OverviewModule(): React.JSX.Element {
       {customOpen && (
         <CustomizeModal
           order={order}
+          scale={scale}
           cardTitles={Object.fromEntries(CARDS.map((c) => [c.key, c.title]))}
-          onSave={(keys) => {
-            saveOrder(keys)
+          onSave={(keys, s) => {
+            saveOrder(keys, s)
             setCustomOpen(false)
           }}
           onClose={() => setCustomOpen(false)}
@@ -129,62 +148,104 @@ export default function OverviewModule(): React.JSX.Element {
   )
 }
 
-/* ================= 概览自定义卡片 ================= */
+/* ================= 概览自定义卡片（显示/隐藏 + 拖拽排序 + 大小缩放） ================= */
 function CustomizeModal({
   order,
+  scale,
   cardTitles,
   onSave,
   onClose
 }: {
   order: string[]
+  scale: 'sm' | 'md' | 'lg'
   cardTitles: Record<string, string>
-  onSave: (keys: string[]) => void
+  onSave: (keys: string[], scale: 'sm' | 'md' | 'lg') => void
   onClose: () => void
 }): React.JSX.Element {
   const [keys, setKeys] = useState([...order])
+  const [nextScale, setNextScale] = useState<'sm' | 'md' | 'lg'>(scale)
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
   const all = Object.keys(cardTitles)
+  const hidden = all.filter((k) => !keys.includes(k))
 
-  const toggle = (k: string): void => {
-    setKeys((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]))
-  }
-  const move = (k: string, dir: -1 | 1): void => {
+  const move = (from: number, to: number): void => {
+    if (from === null || to === from || from < 0 || from >= keys.length || to < 0 || to >= keys.length) return
     setKeys((prev) => {
-      const i = prev.indexOf(k)
-      const j = i + dir
-      if (i < 0 || j < 0 || j >= prev.length) return prev
       const next = [...prev]
-      next[i] = next[j]
-      next[j] = k
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
       return next
     })
   }
 
+  const removeKey = (k: string): void => setKeys((prev) => prev.filter((x) => x !== k))
+  const addKey = (k: string): void => setKeys((prev) => (prev.includes(k) ? prev : [...prev, k]))
+
   return (
     <div className="modal-mask" onMouseDown={onClose}>
-      <div className="modal-card" role="dialog" aria-modal="true" aria-label="自定义概览卡片" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="modal-card modal-wide" role="dialog" aria-modal="true" aria-label="自定义概览卡片" onMouseDown={(e) => e.stopPropagation()}>
         <h3 className="modal-title">概览页卡片</h3>
-        <p className="field-hint" style={{ marginBottom: 10 }}>勾选要显示的卡片；用 ↑↓ 调整顺序。</p>
-        {all.map((k) => {
-          const on = keys.includes(k)
-          return (
-            <div key={k} className="cust-row">
+
+        <div className="field">
+          <span className="field-label">卡片大小</span>
+          <div className="seg">
+            {([
+              ['sm', '小'],
+              ['md', '中'],
+              ['lg', '大']
+            ] as const).map(([k, lb]) => (
+              <button key={k} className={`seg-btn${nextScale === k ? ' active' : ''}`} onClick={() => setNextScale(k)}>
+                {lb}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="field-hint" style={{ margin: '4px 0 6px' }}>已显示的卡片（拖动 ⋮⋮ 排序）：</p>
+        <div className="cust-drag-list">
+          {keys.map((k, i) => (
+            <div
+              key={k}
+              className={`cust-drag-row${dragIdx === i ? ' dragging' : ''}`}
+              draggable
+              onDragStart={() => setDragIdx(i)}
+              onDragEnd={() => setDragIdx(null)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                move(dragIdx ?? -1, i)
+                setDragIdx(null)
+              }}
+            >
+              <span className="cust-drag" aria-hidden>⋮⋮</span>
               <label className="cust-check">
-                <input type="checkbox" checked={on} onChange={() => toggle(k)} />
+                <input type="checkbox" checked onChange={() => removeKey(k)} />
                 <span>{cardTitles[k]}</span>
               </label>
-              {on && (
-                <span className="cust-arrows">
-                  <button className="todo-mini-btn" onClick={() => move(k, -1)} title="上移">↑</button>
-                  <button className="todo-mini-btn" onClick={() => move(k, 1)} title="下移">↓</button>
-                </span>
-              )}
             </div>
-          )
-        })}
+          ))}
+          {keys.length === 0 && <div className="field-hint">（没有显示的卡片，可在下方勾选添加）</div>}
+        </div>
+
+        {hidden.length > 0 && (
+          <>
+            <p className="field-hint" style={{ margin: '10px 0 6px' }}>未显示的卡片（勾选即加入）：</p>
+            <div className="cust-list">
+              {hidden.map((k) => (
+                <div key={k} className="cust-check-row">
+                  <label className="cust-check">
+                    <input type="checkbox" checked={false} onChange={() => addKey(k)} />
+                    <span>{cardTitles[k]}</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="modal-actions">
           <div className="modal-actions-right">
             <button className="btn btn-ghost" onClick={onClose}>取消</button>
-            <button className="btn btn-primary" onClick={() => onSave(keys)}>保存布局</button>
+            <button className="btn btn-primary" onClick={() => onSave(keys, nextScale)}>保存布局</button>
           </div>
         </div>
       </div>

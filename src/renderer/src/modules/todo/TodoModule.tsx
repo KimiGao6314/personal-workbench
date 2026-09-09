@@ -32,8 +32,8 @@ type Filter = 'all' | 'active' | 'done'
 
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: '全部' },
-  { key: 'active', label: '待打卡/进行中' },
-  { key: 'done', label: '已完成/今日已打' }
+  { key: 'active', label: '进行中' },
+  { key: 'done', label: '已完成' }
 ]
 
 /* 输入栏二级菜单字段：全部手动选择（不做文字识别） */
@@ -345,14 +345,14 @@ export default function TodoModule(): React.JSX.Element {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          {counts.active > 0 && (
-            <button className="btn btn-primary btn-sm" onClick={completeAllActive}>
-              ✓ 全部完成
-            </button>
-          )}
           {counts.done > 0 && (
             <button className="btn btn-ghost btn-sm" onClick={clearDone}>
               清除已完成
+            </button>
+          )}
+          {counts.active > 0 && (
+            <button className="btn btn-primary btn-sm" onClick={completeAllActive}>
+              ✓ 全部完成
             </button>
           )}
         </div>

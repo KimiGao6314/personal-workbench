@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 APP_NAME="我的工作台"
 APP_DIR="${APP_NAME}.app"
 BUNDLE_ID="com.local.workbench"
-VERSION="0.9.0"
+VERSION="1.1.0"
 SRC_APP="node_modules/electron/dist/Electron.app"
 DIST="dist/$APP_DIR"
 DEST="/Applications/$APP_DIR"
@@ -73,6 +73,7 @@ PLIST="$DIST/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1" "$PLIST" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "$PLIST" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :LSApplicationCategoryType string public.app-category.productivity" "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string 用于在日程中读取 macOS 本地日历（如中国节假日）并显示。" "$PLIST" 2>/dev/null || true
 
 echo "==> 6/6 安装到 $DEST"
 rm -rf "$DEST"

@@ -20,10 +20,8 @@ import {
   type TimetableState
 } from '../timetable/model'
 
-/** 迷你图里每节高度（px） */
-const ROW = 13
-
-export default function MiniTimetable(): React.JSX.Element {
+/** 迷你图里每节高度（px），由缩放档位决定 */
+export default function MiniTimetable({ scale = 'md' }: { scale?: 'sm' | 'md' | 'lg' }): React.JSX.Element {
   const { ready, data, error } = useStore<TimetableState>(TIMETABLE_NS)
   const { navigate } = useShell()
   const raw = data
@@ -33,6 +31,7 @@ export default function MiniTimetable(): React.JSX.Element {
   const viewWeek = week !== null && week > 0 ? week : null
   const today = todayIndex()
   const todayCount = countToday(raw)
+  const ROW = scale === 'sm' ? 11 : scale === 'lg' ? 16 : 13
   const totalPx = MAX_PERIOD * ROW
   const goFull = (): void => navigate('timetable')
   const showAll = viewWeek === null // 未设置开学周：无法过滤周次，全部显示
@@ -58,8 +57,7 @@ export default function MiniTimetable(): React.JSX.Element {
 
       {ready && !error && entries.length > 0 && (
         <>
-          <div className="mini-head" style={{ gridTemplateColumns: `var(--mini-gutter) repeat(7, minmax(0, 1fr))` }}>
-            <span />
+          <div className="mini-head" style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}>
             {DAY_LABELS.map((label, i) => (
               <span key={label} className={`mini-day-name${i === today ? ' is-today' : ''}`}>
                 {label.replace('周', '')}
@@ -67,15 +65,7 @@ export default function MiniTimetable(): React.JSX.Element {
             ))}
           </div>
 
-          <div className="mini-body" style={{ gridTemplateColumns: `var(--mini-gutter) repeat(7, minmax(0, 1fr))`, height: totalPx }}>
-            <div className="mini-gutter" style={{ height: totalPx }}>
-              {Array.from({ length: MAX_PERIOD }, (_, i) => (
-                <span key={i} className="mini-period-label" style={{ top: i * ROW, height: ROW }}>
-                  {i + 1}
-                </span>
-              ))}
-            </div>
-
+          <div className="mini-body" style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))`, height: totalPx }}>
             {DAY_LABELS.map((_label, day) => (
               <div key={day} className={`mini-col${day === today ? ' is-today' : ''}`} style={{ height: totalPx }}>
                 {Array.from({ length: MAX_PERIOD }, (_, i) => (

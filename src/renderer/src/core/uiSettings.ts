@@ -18,9 +18,12 @@ export interface UiSettings {
   background: BgSettings
   /** 概览页显示的卡片 key（默认全部，缺省表示用默认顺序） */
   overviewCards?: string[]
+  /** 概览页卡片缩放：小 / 中 / 大 */
+  overviewCardScale?: 'sm' | 'md' | 'lg'
 }
 
 export const DEFAULT_UI: UiSettings = {
   background: { file: null, dim: 0.45, blur: 0 },
-  overviewCards: undefined
+  overviewCards: undefined,
+  overviewCardScale: 'md'
 }

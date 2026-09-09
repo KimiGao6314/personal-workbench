@@ -72,9 +72,10 @@ function Sidebar(): React.JSX.Element {
         </div>
         <div className="brand-text">
           <div className="brand-name">
-            我的工作台
-            <span className="brand-beta" title="当前为测试版本">Beta</span>
-            <span className="brand-ver">{APP_VERSION}</span>
+            <span className="brand-title">我的工作台</span>
+            <span className="brand-tags">
+              <span className="brand-ver">{APP_VERSION}</span>
+            </span>
           </div>
           <div className="brand-sub">personal workbench</div>
         </div>

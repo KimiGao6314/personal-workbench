@@ -15,7 +15,6 @@ import {
   EMPTY_TIMETABLE,
   MAX_PERIOD,
   PALETTE,
-  PERIOD_TIMES,
   TIMETABLE_NS,
   activeInWeek,
   borderOf,
@@ -207,7 +206,6 @@ export default function ScheduleModule(): React.JSX.Element {
             {Array.from({ length: MAX_PERIOD }, (_, i) => (
               <div key={i} className="tt-period-mark" style={{ height: ROW_PX }}>
                 <span className="tt-period-no">第{i + 1}节</span>
-                <span className="tt-period-time">{PERIOD_TIMES[i][0]}</span>
               </div>
             ))}
           </div>

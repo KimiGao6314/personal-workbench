@@ -217,6 +217,18 @@ html[data-platform='darwin'] .brand {
   font-weight: 700;
   letter-spacing: 0.2px;
 }
+.brand-title {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.brand-tags {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+  margin-left: 2px;
+}
 /* 测试版本标记 */
 .brand-beta {
   flex: none;
@@ -537,6 +549,9 @@ html[data-platform='darwin'] .brand {
 }
 .seg {
   display: inline-flex;
+  align-items: center;
+  height: 34px;
+  box-sizing: border-box;
   padding: 3px;
   gap: 2px;
   background: var(--panel);
@@ -552,6 +567,7 @@ html[data-platform='darwin'] .brand {
   font-size: 12.5px;
   color: var(--fg-dim);
   transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
 }
 .seg-btn:hover {
   color: var(--fg);
@@ -889,7 +905,8 @@ html[data-platform='darwin'] .brand {
 
 /* ============ 概览页迷你卡（外借器材 / 进行中项目） ============ */
 .ov-card {
-  height: var(--duo-card-height, 262px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 12px 14px 10px;
@@ -929,6 +946,16 @@ html[data-platform='darwin'] .brand {
   align-items: center;
   gap: 7px;
   min-width: 0;
+}
+.ov-li-ic {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  border-radius: 7px;
+  background: var(--accent-soft);
 }
 .ov-li-title {
   flex: 1;
@@ -1161,6 +1188,8 @@ html[data-platform='darwin'] .brand {
 }
 .search-input {
   width: 220px;
+  height: 34px;
+  box-sizing: border-box;
   padding: 7px 11px;
   background: var(--field);
   border: 1px solid var(--border);
@@ -1725,7 +1754,8 @@ input[type='time'].text-input {
 
 /* ---------- 右：待办事项迷你卡（与左卡等高固定） ---------- */
 .todo-mini {
-  height: var(--duo-card-height, 262px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 12px 14px 10px;
@@ -1805,20 +1835,19 @@ input[type='time'].text-input {
   color: var(--fg-faint);
 }
 .todo-mini-foot {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-soft);
+  flex: none;
+  align-self: center;
   font-size: 11px;
   color: var(--fg-faint);
-  text-align: right;
+  white-space: nowrap;
 }
 
 .mini-sched {
-  --mini-gutter: 26px;
-  height: var(--duo-card-height, 262px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 12px 14px 10px;
   background: var(--panel);
   border: 1px solid var(--border-soft);
@@ -2224,13 +2253,22 @@ input[type='time'].text-input {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
-.ov-block { min-width: 0; }
+.ov-block { min-width: 0; display: flex; flex-direction: column; }
 .cust-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 2px; }
 .cust-check { display: flex; align-items: center; gap: 9px; font-size: 13px; cursor: pointer; }
 .cust-check input { accent-color: var(--accent); width: 15px; height: 15px; }
 .cust-arrows { display: flex; gap: 2px; }
+.cust-drag { flex: none; width: 18px; color: var(--fg-faint); cursor: grab; font-size: 12px; text-align: center; user-select: none; -webkit-user-select: none; }
+.cust-drag-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 8px; cursor: grab; }
+.cust-drag-row:hover { background: var(--hover); }
+.cust-drag-row.dragging { opacity: 0.5; }
+.cust-check-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; }
+.cust-drag-list { display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow-y: auto; }
+.cust-list { display: flex; flex-direction: column; gap: 2px; }
+.gear-mini-counts { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 8px; }
+.gear-mini-pill { font-size: 11px; color: var(--fg-dim); background: var(--field); border: 1px solid var(--border-soft); border-radius: 999px; padding: 2px 8px; }
 
 .overview-top-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .overview-mini-stats { display: flex; align-items: center; gap: 10px; }
@@ -2268,6 +2306,10 @@ html[data-fullscreen='1'] * {
   background: var(--panel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
+}
+/* 日程页：输入区（搜索框）与下方日历分开，避免粘连 */
+.qf-shell.agenda {
+  margin-bottom: 16px;
 }
 .qf-bar {
   display: flex;
@@ -2882,9 +2924,12 @@ html[data-fullscreen='1'] * {
 /* 迷你课表（概览）：节次小刻度 */
 .mini-period-label {
   position: absolute;
-  left: 3px;
-  font-size: 9px;
-  line-height: 13px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
   color: var(--fg-faint);
   font-variant-numeric: tabular-nums;
 }
@@ -2895,14 +2940,20 @@ html[data-fullscreen='1'] * {
   border-top: 1px solid var(--border-soft);
   opacity: 0.55;
 }
-.mini-gutter .mini-period-label:last-child {
-  height: 12px;
-}
 
 /* ============ 日程重复（每天/工作日/周末/自定义） ============ */
 .tag-repeat {
   color: #4dd6e0;
   background: rgba(77, 214, 224, 0.14);
+}
+/* 系统日历（节假日）条目 */
+.tag-sys {
+  color: #46d69b;
+  background: rgba(70, 214, 155, 0.14);
+}
+.sys-row {
+  cursor: default;
+  opacity: 0.92;
 }
 .rep-rows {
   display: flex;

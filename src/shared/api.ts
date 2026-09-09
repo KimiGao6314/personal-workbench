@@ -100,6 +100,22 @@ export interface WorkbenchLicense {
   activate(device: string, code: string): Promise<{ ok: boolean; message: string }>
 }
 
+// ---------- 系统日历（主进程实现见 src/main/calendar.ts） ----------
+
+export interface CalendarEvent {
+  /** YYYY-MM-DD */
+  date: string
+  title: string
+  allDay: boolean
+  /** HH:mm（全天事件为 00:00） */
+  time: string
+}
+
+export interface WorkbenchCalendar {
+  /** 读取 macOS 本地日历在 [from, to] 范围内的事件 */
+  events(from: string, to: string): Promise<CalendarEvent[]>
+}
+
 export interface StoreReadOk<T> {
   ok: true
   /** 文件不存在时返回 null，由各模块自行决定用默认值 */
@@ -131,4 +147,5 @@ export interface WorkbenchBridge {
   bg: WorkbenchBackground
   license: WorkbenchLicense
   notify: WorkbenchNotify
+  calendar: WorkbenchCalendar
 }

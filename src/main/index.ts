@@ -11,6 +11,7 @@ import { registerBackgroundIpc } from './background'
 import { maybeAutoScreenshot } from './screenshot'
 import { registerLicenseIpc } from './license'
 import { registerNotifyIpc } from './notify'
+import { registerCalendarIpc } from './calendar'
 
 // 渲染优化：开启 GPU 栅格化，降低透明玻璃窗口快速滚动时的重绘抖动/闪屏
 app.commandLine.appendSwitch('enable-gpu-rasterization')
@@ -41,6 +42,8 @@ if (!gotTheLock) {
     registerNotifyIpc()
     // 背景图片 IPC
     registerBackgroundIpc()
+    // macOS 本地日历（节假日等）IPC
+    registerCalendarIpc()
     createMainWindow()
     maybeAutoScreenshot()
 
