@@ -1,7 +1,30 @@
 # 我的工作台（personal-workbench）
 
-只供你自己使用的 macOS 桌面工作台。当前是**模块化框架 + 待办清单**第一版，
-界面采用 **Liquid Glass（macOS 26 Tahoe 原生毛玻璃）** 观感，深浅色自动跟随系统。
+一个只在本机运行的 **macOS 桌面工作台**，把常用的小工具收进一个玻璃质感窗口里：
+待办清单、课程表、日程、项目管理、设备台账、快捷启动器、概览页。
+
+当前版本：**0.9.0 抢先体验版**。本仓库为**无密钥开源版**——不需要任何授权码，克隆即可运行。
+
+## 系统要求
+
+| 系统 | 玻璃观感 | 说明 |
+| --- | --- | --- |
+| macOS 26（Tahoe） | 原生 **Liquid Glass** | 自动加载 `electron-liquid-glass` 原生视图 |
+| macOS 15 / macOS 14 | 传统 **毛玻璃**（NSVisualEffectView） | 自动走 `vibrancy: under-window`，**不加载** 26 专属原生库 |
+
+> 应用启动时会按系统版本自动选择上面的引擎，**同一份 App 在 macOS 14 / 15 / 26 上都可直接运行**，无需区分版本。
+
+## 功能
+
+- **概览页**：问候、迷你统计、自定义卡片布局（课表 / 待办 / 外借器材 / 项目 / 日程）
+- **待办清单**：每日打卡、提醒时间、地点、人物、搜索与过滤
+- **课程表**：一天 12 节次制；支持**教学周**（设置第 1 周第一天自动推算本周、按周查看）、
+  导入 **.xlsx** 课表、识别开课周次（1-16周 / 单周 / 双周）、相邻同名课自动合并、一键清空
+- **日程**：月历总览 + 当日列表；支持重复规则（每天 / 每工作日 / 每周末 / 自定义周几+单双周）、快速删除
+- **项目管理**：作品 / 项目交付跟踪
+- **设备台账**：设备记录 + 外借记录 + 照片证据
+- **快捷启动器**：常用工程 / 文件夹 / 软件一键直达
+- 本机数据存储（JSON），不联网、不上传
 
 ## 技术栈
 
@@ -10,77 +33,44 @@
 | 桌面运行时 | Electron 44 |
 | 界面 | React 19 + TypeScript |
 | 构建 | electron-vite 5（Vite 7） |
-| 数据 | 主进程 JSON 存储，`userData/data/<namespace>.json` |
+| 包管理 | pnpm 11（allowBuilds：esbuild / electron） |
 
 ## 快速开始
 
 ```bash
-pnpm install          # 已配置 allowBuilds（esbuild/electron）
-pnpm dev              # 开发模式（热更新）
-pnpm build && pnpm start   # 构建并运行产物
-pnpm typecheck        # 类型检查（主进程 + 渲染进程）
+pnpm install
+pnpm dev               # 开发模式（热更新）
+pnpm build             # 构建 out/
+pnpm package           # 打包 .app 到 /Applications，并生成桌面 DMG
+pnpm typecheck         # 类型检查（主进程 + 渲染进程）
 ```
 
-> 首次安装：`pnpm install` 用 `ELECTRON_SKIP_BINARY_DOWNLOAD=1` 跳过 Electron 下载，
-> 然后把 `../dsh-whale-pet/node_modules/electron/{dist,path.txt}` 复制到本工程的
-> `node_modules/electron/`（本机 GitHub 不通，桌宠工程已有同版本 v44 二进制）。
-
-## Liquid Glass 是怎么做的
-
-- **窗口玻璃**：`src/main/window.ts` 打开 `vibrancy: 'under-window'`
-  （macOS 26 上 Electron 自动渲染成系统 Liquid Glass 材质），背景设为全透明。
-- **界面半透明**：`global.css` 里所有面板/卡片/输入框都是半透明色（`--panel` 等变量），
-  玻璃从透明处透出来；整份配色分深/浅两套，`prefers-color-scheme` 自动切换。
-- **微调材质**：`WB_VIBRANCY=sidebar pnpm dev` 可换材质
-  （under-window / sidebar / hud / popover / content …），默认 under-window。
-- **视觉自检**：`WB_SHOT_PATH=/tmp/a.png pnpm start` 会截图后自动退出
-  （capturePage 不含原生玻璃层，玻璃观感以肉眼为准）。
+打包脚本见 `scripts/package-app.sh`；增量更新包生成脚本见 `scripts/make-update-package.sh`。
 
 ## 目录结构
 
 ```text
 personal-workbench/
 ├── src/
-│   ├── main/                 # Electron 主进程
-│   │   ├── index.ts          # 生命周期 / 单实例
-│   │   ├── window.ts         # 窗口 + Liquid Glass vibrancy
-│   │   ├── store.ts          # 通用 JSON 存储（IPC: store:read/write）
-│   │   └── screenshot.ts     # 开发截图自检（WB_SHOT_PATH 触发）
+│   ├── main/                 # Electron 主进程（窗口/玻璃引擎/存储/授权/通知/照片）
 │   ├── preload/index.ts      # contextBridge：只暴露 workbench.* 白名单 API
 │   ├── shared/api.ts         # 主/渲染进程共享类型
 │   └── renderer/
 │       ├── index.html
 │       └── src/
 │           ├── App.tsx             # 外壳：侧边栏 + 顶栏 + 模块渲染
-│           ├── global.css          # Liquid Glass 半透明主题（深/浅两套）
-│           ├── core/
-│           │   ├── registry.tsx    # ★ 模块注册表（加模块改这里）
-│           │   ├── shell.tsx       # 导航 Context（useShell）
-│           │   └── useStore.ts     # ★ 数据 Hook：useStore('namespace')
-│           └── modules/
-│               ├── overview/       # 概览页（问候/统计/入口卡片）
-│               └── todo/           # 待办清单（model.ts + TodoModule + TodoBadge）
-└── pnpm-workspace.yaml   # pnpm 11 的 allowBuilds 白名单
+│           ├── global.css          # 玻璃半透明主题（深/浅两套）
+│           ├── core/               # 注册表 / 数据 Hook / 通用组件
+│           └── modules/            # overview/todo/timetable/agenda/assignments/gear/launcher
+├── scripts/                 # 打包、DMG、增量更新、卸载器
+└── electron.vite.config.ts
 ```
 
-## 新增一个模块（三步）
+## 数据与隐私
 
-1. 建目录 `src/renderer/src/modules/<name>/`，写组件：
-   ```tsx
-   const data = useStore<MyState>('myns')   // 自动持久化 + 跨模块同步
-   ```
-2. 在 `core/registry.tsx` 追加一条：
-   ```tsx
-   { id: 'myns', title: '我的模块', icon: '🧩', description: '…',
-     component: MyModule, badge: MyBadge /* 可选：侧边栏角标 */ }
-   ```
-3. 侧边栏与概览页自动出现该模块；`⌘/Ctrl + 数字键` 可快速切换。
+所有数据只写进本机 `~/Library/Application Support/我的工作台/data/`（待办、课程表、日程、
+设备台账、照片、背景、设置），**不联网、不上传**。
 
-> 数据只会写进 `~/Library/Application Support/personal-workbench/data/`，
-> 不联网、不上传，纯本机私有。
+## 致谢
 
-## 已内置功能（待办模块）
-
-- 回车添加任务；勾选完成/取消；悬停 ✕ 删除；双击行内编辑
-- 全部 / 进行中 / 已完成 过滤（带数量）+「清除已完成」
-- 侧边栏实时「进行中」角标；概览页统计与入口卡片同步刷新
+感谢以下同学在测试版本的体验与反馈：何彦驹、李子轩、乔雨阳、徐翊洋、赵思玛。
