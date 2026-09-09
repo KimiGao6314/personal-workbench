@@ -1,0 +1,22 @@
+# 依赖与构建产物（不提交）
+node_modules/
+out/
+dist/
+*.log
+
+# macOS
+.DS_Store
+
+# 打包/发布产物
+*.dmg
+
+# 授权密钥相关 —— 绝不提交（本仓库为“无密钥开源版”）
+scripts/gen-license.mjs
+developer/
+*.license
+license.key
+
+# 本地个人文件
+*.local
+.env
+.env.*

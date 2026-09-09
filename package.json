@@ -1,0 +1,32 @@
+{
+  "name": "personal-workbench",
+  "productName": "我的工作台",
+  "version": "0.9.0",
+  "description": "我的桌面工作台：模块化框架 + 待办/课程表（Electron + React + TypeScript）",
+  "private": true,
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "package": "./scripts/package-app.sh",
+    "typecheck": "tsc --noEmit --composite false -p tsconfig.node.json && tsc --noEmit --composite false -p tsconfig.web.json",
+    "release": "./scripts/build-releases.sh"
+  },
+  "dependencies": {
+    "electron-liquid-glass": "^1.1.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "44.0.0",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6"
+  }
+}

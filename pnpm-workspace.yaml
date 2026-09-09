@@ -1,0 +1,8 @@
+# pnpm 设置（v11 起只读本文件，不再读 package.json 的 pnpm 字段）
+# 允许以下依赖执行安装脚本（supply-chain 白名单）：
+# - esbuild: postinstall 需要就位平台二进制
+# - electron: postinstall 下载运行时（本机用 ELECTRON_SKIP_BINARY_DOWNLOAD=1 跳过，
+#   二进制从 dsh-whale-pet 复用，见 README「首次运行」）
+allowBuilds:
+  esbuild: true
+  electron: true
